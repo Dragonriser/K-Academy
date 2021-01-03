@@ -1045,18 +1045,19 @@ def examQuestionEntry(courseHash):
         fg = '#555555',
         activebackground = '#D1D4E7',
         bd = 0,
-        command = lambda e = questionEntries, f = indexes: submitAnswers(e, f)
+        command = lambda e = questionEntries, f = indexes, g = take: submitAnswers(e, f, g)
     )
     submitButton.grid(row = row, column = 1)
     entryFrame.pack()
 
-def submitAnswers(entries, indexes):
+def submitAnswers(entries, indexes, win):
     entryData = [e.get() for e in entries]
     for i in range(len(entryData)):
         if entryData[i] != "":
             userData.questions[indexes[i]].submitAnswer(entryData[i])
+    win.destroy()
 
-def submitMarks(entries, indexes):
+def submitMarks(entries, indexes, win):
     entryData = [e.get() for e in entries]
     for i in range(len(entryData)):
         if entryData[i] != "":
@@ -1064,6 +1065,7 @@ def submitMarks(entries, indexes):
                 userData.questions[indexes[i]].markQuestion(int(entryData[i]))
             except:
                 pass
+    win.destroy()
             
     
 
@@ -1097,7 +1099,7 @@ def markSchemeEntry(courseHash):
         fg = '#555555',
         activebackground = '#D1D4E7',
         bd = 0,
-        command = lambda e = markEntries, f = indexes: submitMarks(e, f)
+        command = lambda e = markEntries, f = indexes, g= take: submitMarks(e, f, g)
     )
     submitButton.grid(row = row, column = 1)
     entryFrame.pack()
@@ -1117,18 +1119,20 @@ class Scheduler:
         courses = [downloadCourse(c) for c in courseHashes]
         allAssignedQuestions = []
         for course in courses:
-            questionNumbers = len(course.questions)
+            questionNumbers = len(course.paperList)
+            print(questionNumbers, course.paperList, course.subject)
             assignedQuestions = []
-            while len(assignedQuestions) != self.questionsperday:
-                newQuestion = course.paperList[random.randint(0, questionNumbers)]
-                contains = False
-                for question in self.userQuestionData:
-                    if question == newQuestion:
-                        contains = True
-                if not contains:
-                    q = UserQuestion(newQuestion, course)
-                    assignedQuestions.append(q)
-            allAssignedQuestions += assignedQuestions
+            if questionNumbers != 0:
+                while len(assignedQuestions) != self.questionsperday:
+                    newQuestion = course.paperList[random.randint(0, questionNumbers)]
+                    contains = False
+                    for question in self.questionData:
+                        if question == newQuestion:
+                            contains = True
+                    if not contains:
+                        q = UserQuestion(newQuestion, course)
+                        assignedQuestions.append(q)
+                allAssignedQuestions += assignedQuestions
         return allAssignedQuestions
 
                         
@@ -1173,12 +1177,13 @@ class User:
         self.lastScheduled = None
 
     def schedule(self):
-        currentDate = datetime.datetime.day.today()
+        currentDate = datetime.date.today()
         if self.lastScheduled != currentDate:
-            s = Scheduler(self.questions, self.studies, self.hoursPerDay)
+            s = Scheduler(self.questions, self.studies, 3)
             self.questions += s.assignedQuestions
             self.lastScheduled = currentDate
             self.todaysSchedule = s
+            setUserData()
             return True
         return False
 
